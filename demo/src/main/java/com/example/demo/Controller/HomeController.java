@@ -14,7 +14,7 @@ import java.util.Map;
 @RestController
 public class HomeController {
 
-    @RequestMapping("/")
+    @RequestMapping("/fcp_api")
     public Map index() {
         //for OntoFarm
         String OntoFarmCollectionList = "117810";

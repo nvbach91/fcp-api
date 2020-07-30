@@ -454,7 +454,7 @@ public class FCP {
 			toFileBL.close();
 			
 			//2. categorization options detection itself - variants v1, v2, v3, v4 (v5 is skipped for now)
-			PrintWriter toFile = new PrintWriter(new FileWriter("C:\\Users\\sudipkumar.sarker\\Desktop\\a.txt", true));
+			PrintWriter toFile = new PrintWriter(new FileWriter("test.txt", true));
 			toFile.println(onto);
 
 			//19-12-19
