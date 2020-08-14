@@ -33,6 +33,7 @@ import org.semanticweb.owlapi.reasoner.OWLReasonerConfiguration;
 import org.semanticweb.owlapi.reasoner.OWLReasonerFactory;
 import org.semanticweb.owlapi.reasoner.SimpleConfiguration;
 import org.semanticweb.owlapi.search.EntitySearcher;
+import org.semanticweb.owlapi.model.MissingImportHandlingStrategy;
 
 import uk.ac.manchester.cs.jfact.JFactFactory;
 
@@ -51,10 +52,12 @@ public class FCP {
     //first there is black list generation
     //then categorization options detection itself
     //onto is the URI of ontology, imports either true (including imports) or false (without imports)
-    public Map getCategorizationOptions(String onto, boolean imports) {
+    public Map<String, Object> getCategorizationOptions(String onto, boolean imports, List<String> selectedClasses) throws Exception {
         try {
             //init for each ontology
             this.manager = OWLManager.createOWLOntologyManager();
+            this.manager.getOntologyConfigurator().setMissingImportHandlingStrategy(MissingImportHandlingStrategy.SILENT);
+            this.manager.getOntologyConfigurator().setConnectionTimeout(500);
             this.ontology=this.manager.loadOntology(IRI.create(onto));
             this.factory=manager.getOWLDataFactory();
 
@@ -68,10 +71,10 @@ public class FCP {
             //the combination (anchor class, property, filler)
             //this is created from the cases where the filler is the class or instance
             //there is always the combination (anchor class, property) added to the black list for pruning
-            HashSet<String> ACpropertyFillerBlist = new HashSet<String>();
+            HashSet<String> ACpropertyFillerBlist = new HashSet<>();
 
             //19-12-19, creation class expressions corresponding to cases v2,v3,v4 (p1,p2,p3) for checking whether they are not already counted in v1 (p1) - kind of experiment implemention
-            HashSet<OWLClassExpression> all_created_class_expressions = null;
+            HashSet<OWLClassExpression> all_created_class_expressions;
 
             //use the reasoner
             this.factory= manager.getOWLDataFactory();
@@ -89,8 +92,7 @@ public class FCP {
                 considerImport=Imports.INCLUDED;
             else
                 considerImport=Imports.EXCLUDED;
-            for(OWLClass cls : this.ontology.getClassesInSignature(considerImport)) {
-
+            this.ontology.classesInSignature(considerImport).forEach((OWLClass cls) -> {
                 //the iteration over all partial definitions and checking of different types of anonymous expressions
                 EntitySearcher.getSuperClasses(cls, this.ontology).forEach((OWLClassExpression exp) -> {
                     //System.out.println("   "+cls+" rdfs:subClassOf:"+exp);
@@ -98,172 +100,172 @@ public class FCP {
                         if (exp instanceof OWLObjectSomeValuesFrom) {
                             String p = ((OWLObjectSomeValuesFrom) exp).getProperty().toString();
 
-                            ACpropertyFillerBlist.add(cls.toString()+";"+p.toString()+";"+((OWLObjectSomeValuesFrom) exp).getFiller());
-                            ACpropertyFillerBlist.add(cls.toString()+";"+p.toString());
+                            ACpropertyFillerBlist.add(cls.toString()+";"+p+";"+((OWLObjectSomeValuesFrom) exp).getFiller());
+                            ACpropertyFillerBlist.add(cls.toString()+";"+p);
 
-                            for(Node<OWLClass> n : reasoner.getSubClasses(cls, false).getNodes()) {
+                            reasoner.getSubClasses(cls, false).nodes().forEach((Node<OWLClass> n) -> {
                                 for(OWLClass cls1 : n.getEntitiesMinusTop()) {
                                     //the propagation to the subclasses
                                     if(!cls1.isBottomEntity()) {
-                                        ACpropertyFillerBlist.add(cls1.toString()+";"+p.toString()+";"+((OWLObjectSomeValuesFrom) exp).getFiller());
-                                        ACpropertyFillerBlist.add(cls1.toString()+";"+p.toString());
+                                        ACpropertyFillerBlist.add(cls1.toString()+";"+p+";"+((OWLObjectSomeValuesFrom) exp).getFiller());
+                                        ACpropertyFillerBlist.add(cls1.toString()+";"+p);
                                     }
                                 }
-                            }
+                            });
                         }
 
                         if (exp instanceof OWLDataSomeValuesFrom) {
                             String p = ((OWLDataSomeValuesFrom) exp).getProperty().toString();
-                            ACpropertyFillerBlist.add(cls.toString()+";"+p.toString());
+                            ACpropertyFillerBlist.add(cls.toString()+";"+p);
 
-                            for(Node<OWLClass> n : reasoner.getSubClasses(cls, false).getNodes()) {
+                            reasoner.getSubClasses(cls, false).nodes().forEach((Node<OWLClass> n) -> {
                                 for(OWLClass cls1 : n.getEntitiesMinusTop()) {
                                     //the propagation to the subclasses
                                     if(!cls1.isBottomEntity()) {
-                                        ACpropertyFillerBlist.add(cls1.toString()+";"+p.toString());
+                                        ACpropertyFillerBlist.add(cls1.toString()+";"+p);
                                     }
                                 }
-                            }
+                            });
                         }
 
                         if (exp instanceof OWLObjectHasValue) {
                             String p = ((OWLObjectHasValue) exp).getProperty().toString();
-                            ACpropertyFillerBlist.add(cls.toString()+";"+p.toString()+";"+((OWLObjectHasValue) exp).getFiller());
-                            ACpropertyFillerBlist.add(cls.toString()+";"+p.toString());
+                            ACpropertyFillerBlist.add(cls.toString()+";"+p+";"+((OWLObjectHasValue) exp).getFiller());
+                            ACpropertyFillerBlist.add(cls.toString()+";"+p);
 
-                            for(Node<OWLClass> n : reasoner.getSubClasses(cls, false).getNodes()) {
+                            reasoner.getSubClasses(cls, false).nodes().forEach((Node<OWLClass> n) -> {
                                 for(OWLClass cls1 : n.getEntitiesMinusTop()) {
                                     //the propagation to the subclasses
                                     if(!cls1.isBottomEntity()) {
-                                        ACpropertyFillerBlist.add(cls1.toString()+";"+p.toString()+";"+((OWLObjectHasValue) exp).getFiller());
-                                        ACpropertyFillerBlist.add(cls1.toString()+";"+p.toString());
+                                        ACpropertyFillerBlist.add(cls1.toString()+";"+p+";"+((OWLObjectHasValue) exp).getFiller());
+                                        ACpropertyFillerBlist.add(cls1.toString()+";"+p);
                                     }
                                 }
-                            }
+                            });
                         }
 
                         if (exp instanceof OWLDataHasValue) {
                             String p = ((OWLDataHasValue) exp).getProperty().toString();
-                            ACpropertyFillerBlist.add(cls.toString()+";"+p.toString());
-                            for(Node<OWLClass> n : reasoner.getSubClasses(cls, false).getNodes()) {
+                            ACpropertyFillerBlist.add(cls.toString()+";"+p);
+                            reasoner.getSubClasses(cls, false).nodes().forEach((Node<OWLClass> n) -> {
                                 for(OWLClass cls1 : n.getEntitiesMinusTop()) {
                                     //the propagation to the subclasses
                                     if(!cls1.isBottomEntity()) {
-                                        ACpropertyFillerBlist.add(cls1.toString()+";"+p.toString());
+                                        ACpropertyFillerBlist.add(cls1.toString()+";"+p);
                                     }
                                 }
-                            }
+                            });
                         }
 
                         if (exp instanceof OWLObjectHasSelf) {
                             String p = ((OWLObjectHasSelf) exp).getProperty().toString();
-                            ACpropertyFillerBlist.add(cls.toString()+";"+p.toString());
-                            for(Node<OWLClass> n : reasoner.getSubClasses(cls, false).getNodes()) {
+                            ACpropertyFillerBlist.add(cls.toString()+";"+p);
+                            reasoner.getSubClasses(cls, false).nodes().forEach((Node<OWLClass> n) -> {
                                 for(OWLClass cls1 : n.getEntitiesMinusTop()) {
                                     //the propagation to the subclasses
                                     if(!cls1.isBottomEntity()) {
-                                        ACpropertyFillerBlist.add(cls1.toString()+";"+p.toString());
+                                        ACpropertyFillerBlist.add(cls1.toString()+";"+p);
                                     }
                                 }
-                            }
+                            });
                         }
 
                         if (exp instanceof OWLObjectMinCardinality) {
                             if(((OWLObjectMinCardinality) exp).getCardinality()>=0) {
                                 String p = ((OWLObjectMinCardinality) exp).getProperty().toString();
-                                ACpropertyFillerBlist.add(cls.toString()+";"+p.toString()+";"+((OWLObjectMinCardinality) exp).getFiller());
-                                ACpropertyFillerBlist.add(cls.toString()+";"+p.toString());
+                                ACpropertyFillerBlist.add(cls.toString()+";"+p+";"+((OWLObjectMinCardinality) exp).getFiller());
+                                ACpropertyFillerBlist.add(cls.toString()+";"+p);
 
-                                for(Node<OWLClass> n : reasoner.getSubClasses(cls, false).getNodes()) {
+                                reasoner.getSubClasses(cls, false).nodes().forEach((Node<OWLClass> n) -> {
                                     for(OWLClass cls1 : n.getEntitiesMinusTop()) {
                                         //the propagation to the subclasses
                                         if(!cls1.isBottomEntity()) {
-                                            ACpropertyFillerBlist.add(cls1.toString()+";"+p.toString()+";"+((OWLObjectMinCardinality) exp).getFiller());
-                                            ACpropertyFillerBlist.add(cls1.toString()+";"+p.toString());
+                                            ACpropertyFillerBlist.add(cls1.toString()+";"+p+";"+((OWLObjectMinCardinality) exp).getFiller());
+                                            ACpropertyFillerBlist.add(cls1.toString()+";"+p);
                                         }
                                     }
-                                }
+                                });
                             }
                         }
 
                         if (exp instanceof OWLDataMinCardinality) {
                             if(((OWLDataMinCardinality) exp).getCardinality()>=0) {
                                 String p = ((OWLDataMinCardinality) exp).getProperty().toString();
-                                ACpropertyFillerBlist.add(cls.toString()+";"+p.toString());
-                                for(Node<OWLClass> n : reasoner.getSubClasses(cls, false).getNodes()) {
+                                ACpropertyFillerBlist.add(cls.toString()+";"+p);
+                                reasoner.getSubClasses(cls, false).nodes().forEach((Node<OWLClass> n) -> {
                                     for(OWLClass cls1 : n.getEntitiesMinusTop()) {
                                         //the propagation to the subclasses
                                         if(!cls1.isBottomEntity()) {
-                                            ACpropertyFillerBlist.add(cls1.toString()+";"+p.toString());
+                                            ACpropertyFillerBlist.add(cls1.toString()+";"+p);
                                         }
                                     }
-                                }
+                                });
                             }
                         }
 
                         if (exp instanceof OWLObjectMaxCardinality) {
                             if(((OWLObjectMaxCardinality) exp).getCardinality()>=0) {
                                 String p = ((OWLObjectMaxCardinality) exp).getProperty().toString();
-                                ACpropertyFillerBlist.add(cls.toString()+";"+p.toString()+";"+((OWLObjectMaxCardinality) exp).getFiller());
-                                ACpropertyFillerBlist.add(cls.toString()+";"+p.toString());
+                                ACpropertyFillerBlist.add(cls.toString()+";"+p+";"+((OWLObjectMaxCardinality) exp).getFiller());
+                                ACpropertyFillerBlist.add(cls.toString()+";"+p);
 
-                                for(Node<OWLClass> n : reasoner.getSubClasses(cls, false).getNodes()) {
+                                reasoner.getSubClasses(cls, false).nodes().forEach((Node<OWLClass> n) -> {
                                     for(OWLClass cls1 : n.getEntitiesMinusTop()) {
                                         //the propagation to the subclasses
                                         if(!cls1.isBottomEntity()) {
-                                            ACpropertyFillerBlist.add(cls1.toString()+";"+p.toString()+";"+((OWLObjectMaxCardinality) exp).getFiller());
-                                            ACpropertyFillerBlist.add(cls1.toString()+";"+p.toString());
+                                            ACpropertyFillerBlist.add(cls1.toString()+";"+p+";"+((OWLObjectMaxCardinality) exp).getFiller());
+                                            ACpropertyFillerBlist.add(cls1.toString()+";"+p);
                                         }
                                     }
-                                }
+                                });
                             }
                         }
 
                         if (exp instanceof OWLDataMaxCardinality) {
                             if(((OWLDataMaxCardinality) exp).getCardinality()>=0) {
                                 String p = ((OWLDataMaxCardinality) exp).getProperty().toString();
-                                ACpropertyFillerBlist.add(cls.toString()+";"+p.toString());
-                                for(Node<OWLClass> n : reasoner.getSubClasses(cls, false).getNodes()) {
+                                ACpropertyFillerBlist.add(cls.toString()+";"+p);
+                                reasoner.getSubClasses(cls, false).nodes().forEach((Node<OWLClass> n) -> {
                                     for(OWLClass cls1 : n.getEntitiesMinusTop()) {
                                         //the propagation to the subclasses
                                         if(!cls1.isBottomEntity()) {
-                                            ACpropertyFillerBlist.add(cls1.toString()+";"+p.toString());
+                                            ACpropertyFillerBlist.add(cls1.toString()+";"+p);
                                         }
                                     }
-                                }
+                                });
                             }
                         }
 
                         if (exp instanceof OWLObjectExactCardinality) {
                             if(((OWLObjectExactCardinality) exp).getCardinality()>=0) {
                                 String p = ((OWLObjectExactCardinality) exp).getProperty().toString();
-                                ACpropertyFillerBlist.add(cls.toString()+";"+p.toString()+";"+((OWLObjectExactCardinality) exp).getFiller());
-                                ACpropertyFillerBlist.add(cls.toString()+";"+p.toString());
+                                ACpropertyFillerBlist.add(cls.toString()+";"+p+";"+((OWLObjectExactCardinality) exp).getFiller());
+                                ACpropertyFillerBlist.add(cls.toString()+";"+p);
 
-                                for(Node<OWLClass> n : reasoner.getSubClasses(cls, false).getNodes()) {
+                                reasoner.getSubClasses(cls, false).nodes().forEach((Node<OWLClass> n) -> {
                                     for(OWLClass cls1 : n.getEntitiesMinusTop()) {
                                         //the propagation to the subclasses
                                         if(!cls1.isBottomEntity()) {
-                                            ACpropertyFillerBlist.add(cls1.toString()+";"+p.toString()+";"+((OWLObjectExactCardinality) exp).getFiller());
-                                            ACpropertyFillerBlist.add(cls1.toString()+";"+p.toString());
+                                            ACpropertyFillerBlist.add(cls1.toString()+";"+p+";"+((OWLObjectExactCardinality) exp).getFiller());
+                                            ACpropertyFillerBlist.add(cls1.toString()+";"+p);
                                         }
                                     }
-                                }
+                                });
                             }
                         }
 
                         if (exp instanceof OWLDataExactCardinality) {
                             if(((OWLDataExactCardinality) exp).getCardinality()>=0) {
                                 String p = ((OWLDataExactCardinality) exp).getProperty().toString();
-                                ACpropertyFillerBlist.add(cls.toString()+";"+p.toString());
-                                for(Node<OWLClass> n : reasoner.getSubClasses(cls, false).getNodes()) {
+                                ACpropertyFillerBlist.add(cls.toString()+";"+p);
+                                reasoner.getSubClasses(cls, false).nodes().forEach((Node<OWLClass> n) -> {
                                     for(OWLClass cls1 : n.getEntitiesMinusTop()) {
                                         //the propagation to the subclasses
                                         if(!cls1.isBottomEntity()) {
-                                            ACpropertyFillerBlist.add(cls1.toString()+";"+p.toString());
+                                            ACpropertyFillerBlist.add(cls1.toString()+";"+p);
                                         }
                                     }
-                                }
+                                });
                             }
                         }
                     }
@@ -275,176 +277,176 @@ public class FCP {
 
                         if (exp instanceof OWLObjectSomeValuesFrom) {
                             String p = ((OWLObjectSomeValuesFrom) exp).getProperty().toString();
-                            ACpropertyFillerBlist.add(cls.toString()+";"+p.toString()+";"+((OWLObjectSomeValuesFrom) exp).getFiller());
-                            ACpropertyFillerBlist.add(cls.toString()+";"+p.toString());
+                            ACpropertyFillerBlist.add(cls.toString()+";"+p+";"+((OWLObjectSomeValuesFrom) exp).getFiller());
+                            ACpropertyFillerBlist.add(cls.toString()+";"+p);
 
-                            for(Node<OWLClass> n : reasoner.getSubClasses(cls, false).getNodes()) {
+                            reasoner.getSubClasses(cls, false).nodes().forEach((Node<OWLClass> n) -> {
                                 for(OWLClass cls1 : n.getEntitiesMinusTop()) {
                                     //the propagation to the subclasses
                                     if(!cls1.isBottomEntity()) {
-                                        ACpropertyFillerBlist.add(cls1.toString()+";"+p.toString()+";"+((OWLObjectSomeValuesFrom) exp).getFiller());
-                                        ACpropertyFillerBlist.add(cls1.toString()+";"+p.toString());
+                                        ACpropertyFillerBlist.add(cls1.toString()+";"+p+";"+((OWLObjectSomeValuesFrom) exp).getFiller());
+                                        ACpropertyFillerBlist.add(cls1.toString()+";"+p);
                                     }
                                 }
-                            }
+                            });
                         }
 
                         if (exp instanceof OWLDataSomeValuesFrom) {
                             String p = ((OWLDataSomeValuesFrom) exp).getProperty().toString();
-                            ACpropertyFillerBlist.add(cls.toString()+";"+p.toString());
-                            for(Node<OWLClass> n : reasoner.getSubClasses(cls, false).getNodes()) {
+                            ACpropertyFillerBlist.add(cls.toString()+";"+p);
+                            reasoner.getSubClasses(cls, false).nodes().forEach((Node<OWLClass> n) -> {
                                 for(OWLClass cls1 : n.getEntitiesMinusTop()) {
                                     //the propagation to the subclasses
                                     if(!cls1.isBottomEntity()) {
-                                        ACpropertyFillerBlist.add(cls1.toString()+";"+p.toString());
+                                        ACpropertyFillerBlist.add(cls1.toString()+";"+p);
                                     }
                                 }
-                            }
+                            });
                         }
 
                         if (exp instanceof OWLObjectHasValue) {
                             String p = ((OWLObjectHasValue) exp).getProperty().toString();
-                            ACpropertyFillerBlist.add(cls.toString()+";"+p.toString()+";"+((OWLObjectHasValue) exp).getFiller());
-                            ACpropertyFillerBlist.add(cls.toString()+";"+p.toString());
+                            ACpropertyFillerBlist.add(cls.toString()+";"+p+";"+((OWLObjectHasValue) exp).getFiller());
+                            ACpropertyFillerBlist.add(cls.toString()+";"+p);
 
-                            for(Node<OWLClass> n : reasoner.getSubClasses(cls, false).getNodes()) {
+                            reasoner.getSubClasses(cls, false).nodes().forEach((Node<OWLClass> n) -> {
                                 for(OWLClass cls1 : n.getEntitiesMinusTop()) {
                                     //the propagation to the subclasses
                                     if(!cls1.isBottomEntity()) {
-                                        ACpropertyFillerBlist.add(cls1.toString()+";"+p.toString()+";"+((OWLObjectHasValue) exp).getFiller());
-                                        ACpropertyFillerBlist.add(cls1.toString()+";"+p.toString());
+                                        ACpropertyFillerBlist.add(cls1.toString()+";"+p+";"+((OWLObjectHasValue) exp).getFiller());
+                                        ACpropertyFillerBlist.add(cls1.toString()+";"+p);
                                     }
                                 }
-                            }
+                            });
                         }
 
                         if (exp instanceof OWLDataHasValue) {
                             String p = ((OWLDataHasValue) exp).getProperty().toString();
-                            ACpropertyFillerBlist.add(cls.toString()+";"+p.toString());
-                            for(Node<OWLClass> n : reasoner.getSubClasses(cls, false).getNodes()) {
+                            ACpropertyFillerBlist.add(cls.toString()+";"+p);
+                            reasoner.getSubClasses(cls, false).nodes().forEach((Node<OWLClass> n) -> {
                                 for(OWLClass cls1 : n.getEntitiesMinusTop()) {
                                     //the propagation to the subclasses
                                     if(!cls1.isBottomEntity()) {
-                                        ACpropertyFillerBlist.add(cls1.toString()+";"+p.toString());
+                                        ACpropertyFillerBlist.add(cls1.toString()+";"+p);
                                     }
                                 }
-                            }
+                            });
                         }
 
                         if (exp instanceof OWLObjectHasSelf) {
                             String p = ((OWLObjectHasSelf) exp).getProperty().toString();
-                            ACpropertyFillerBlist.add(cls.toString()+";"+p.toString());
-                            for(Node<OWLClass> n : reasoner.getSubClasses(cls, false).getNodes()) {
+                            ACpropertyFillerBlist.add(cls.toString()+";"+p);
+                            reasoner.getSubClasses(cls, false).nodes().forEach((Node<OWLClass> n) -> {
                                 for(OWLClass cls1 : n.getEntitiesMinusTop()) {
                                     //the propagation to the subclasses
                                     if(!cls1.isBottomEntity()) {
-                                        ACpropertyFillerBlist.add(cls1.toString()+";"+p.toString());
+                                        ACpropertyFillerBlist.add(cls1.toString()+";"+p);
                                     }
                                 }
-                            }
+                            });
                         }
 
                         if (exp instanceof OWLObjectMinCardinality) {
                             if(((OWLObjectMinCardinality) exp).getCardinality()>=0) {
                                 String p = ((OWLObjectMinCardinality) exp).getProperty().toString();
-                                ACpropertyFillerBlist.add(cls.toString()+";"+p.toString()+";"+((OWLObjectMinCardinality) exp).getFiller());
-                                ACpropertyFillerBlist.add(cls.toString()+";"+p.toString());
+                                ACpropertyFillerBlist.add(cls.toString()+";"+p+";"+((OWLObjectMinCardinality) exp).getFiller());
+                                ACpropertyFillerBlist.add(cls.toString()+";"+p);
 
-                                for(Node<OWLClass> n : reasoner.getSubClasses(cls, false).getNodes()) {
+                                reasoner.getSubClasses(cls, false).nodes().forEach((Node<OWLClass> n) -> {
                                     for(OWLClass cls1 : n.getEntitiesMinusTop()) {
                                         //the propagation to the subclasses
                                         if(!cls1.isBottomEntity()) {
-                                            ACpropertyFillerBlist.add(cls1.toString()+";"+p.toString()+";"+((OWLObjectMinCardinality) exp).getFiller());
-                                            ACpropertyFillerBlist.add(cls1.toString()+";"+p.toString());
+                                            ACpropertyFillerBlist.add(cls1.toString()+";"+p+";"+((OWLObjectMinCardinality) exp).getFiller());
+                                            ACpropertyFillerBlist.add(cls1.toString()+";"+p);
                                         }
                                     }
-                                }
+                                });
                             }
                         }
 
                         if (exp instanceof OWLDataMinCardinality) {
                             if(((OWLDataMinCardinality) exp).getCardinality()>=0) {
                                 String p = ((OWLDataMinCardinality) exp).getProperty().toString();
-                                ACpropertyFillerBlist.add(cls.toString()+";"+p.toString());
-                                for(Node<OWLClass> n : reasoner.getSubClasses(cls, false).getNodes()) {
+                                ACpropertyFillerBlist.add(cls.toString()+";"+p);
+                                reasoner.getSubClasses(cls, false).nodes().forEach((Node<OWLClass> n) -> {
                                     for(OWLClass cls1 : n.getEntitiesMinusTop()) {
                                         //the propagation to the subclasses
                                         if(!cls1.isBottomEntity()) {
-                                            ACpropertyFillerBlist.add(cls1.toString()+";"+p.toString());
+                                            ACpropertyFillerBlist.add(cls1.toString()+";"+p);
                                         }
                                     }
-                                }
+                                });
                             }
                         }
 
                         if (exp instanceof OWLObjectMaxCardinality) {
                             if(((OWLObjectMaxCardinality) exp).getCardinality()>=0) {
                                 String p = ((OWLObjectMaxCardinality) exp).getProperty().toString();
-                                ACpropertyFillerBlist.add(cls.toString()+";"+p.toString()+";"+((OWLObjectMaxCardinality) exp).getFiller());
-                                ACpropertyFillerBlist.add(cls.toString()+";"+p.toString());
+                                ACpropertyFillerBlist.add(cls.toString()+";"+p+";"+((OWLObjectMaxCardinality) exp).getFiller());
+                                ACpropertyFillerBlist.add(cls.toString()+";"+p);
 
-                                for(Node<OWLClass> n : reasoner.getSubClasses(cls, false).getNodes()) {
+                                reasoner.getSubClasses(cls, false).nodes().forEach((Node<OWLClass> n) -> {
                                     for(OWLClass cls1 : n.getEntitiesMinusTop()) {
                                         //the propagation to the subclasses
                                         if(!cls1.isBottomEntity()) {
-                                            ACpropertyFillerBlist.add(cls1.toString()+";"+p.toString()+";"+((OWLObjectMaxCardinality) exp).getFiller());
-                                            ACpropertyFillerBlist.add(cls1.toString()+";"+p.toString());
+                                            ACpropertyFillerBlist.add(cls1.toString()+";"+p+";"+((OWLObjectMaxCardinality) exp).getFiller());
+                                            ACpropertyFillerBlist.add(cls1.toString()+";"+p);
                                         }
                                     }
-                                }
+                                });
                             }
                         }
 
                         if (exp instanceof OWLDataMaxCardinality) {
                             if(((OWLDataMaxCardinality) exp).getCardinality()>=0) {
                                 String p = ((OWLDataMaxCardinality) exp).getProperty().toString();
-                                ACpropertyFillerBlist.add(cls.toString()+";"+p.toString());
-                                for(Node<OWLClass> n : reasoner.getSubClasses(cls, false).getNodes()) {
+                                ACpropertyFillerBlist.add(cls.toString()+";"+p);
+                                reasoner.getSubClasses(cls, false).nodes().forEach((Node<OWLClass> n) -> {
                                     for(OWLClass cls1 : n.getEntitiesMinusTop()) {
                                         //the propagation to the subclasses
                                         if(!cls1.isBottomEntity()) {
-                                            ACpropertyFillerBlist.add(cls1.toString()+";"+p.toString());
+                                            ACpropertyFillerBlist.add(cls1.toString()+";"+p);
                                         }
                                     }
-                                }
+                                });
                             }
                         }
 
                         if (exp instanceof OWLObjectExactCardinality) {
                             if(((OWLObjectExactCardinality) exp).getCardinality()>=0) {
                                 String p = ((OWLObjectExactCardinality) exp).getProperty().toString();
-                                ACpropertyFillerBlist.add(cls.toString()+";"+p.toString()+";"+((OWLObjectExactCardinality) exp).getFiller());
-                                ACpropertyFillerBlist.add(cls.toString()+";"+p.toString());
+                                ACpropertyFillerBlist.add(cls.toString()+";"+p+";"+((OWLObjectExactCardinality) exp).getFiller());
+                                ACpropertyFillerBlist.add(cls.toString()+";"+p);
 
-                                for(Node<OWLClass> n : reasoner.getSubClasses(cls, false).getNodes()) {
+                                reasoner.getSubClasses(cls, false).nodes().forEach((Node<OWLClass> n) -> {
                                     for(OWLClass cls1 : n.getEntitiesMinusTop()) {
                                         //the propagation to the subclasses
                                         if(!cls1.isBottomEntity()) {
-                                            ACpropertyFillerBlist.add(cls1.toString()+";"+p.toString()+";"+((OWLObjectExactCardinality) exp).getFiller());
-                                            ACpropertyFillerBlist.add(cls1.toString()+";"+p.toString());
+                                            ACpropertyFillerBlist.add(cls1.toString()+";"+p+";"+((OWLObjectExactCardinality) exp).getFiller());
+                                            ACpropertyFillerBlist.add(cls1.toString()+";"+p);
                                         }
                                     }
-                                }
+                                });
                             }
                         }
 
                         if (exp instanceof OWLDataExactCardinality) {
                             if(((OWLDataExactCardinality) exp).getCardinality()>=0) {
                                 String p = ((OWLDataExactCardinality) exp).getProperty().toString();
-                                ACpropertyFillerBlist.add(cls.toString()+";"+p.toString());
-                                for(Node<OWLClass> n : reasoner.getSubClasses(cls, false).getNodes()) {
+                                ACpropertyFillerBlist.add(cls.toString()+";"+p);
+                                reasoner.getSubClasses(cls, false).nodes().forEach((Node<OWLClass> n) -> {
                                     for(OWLClass cls1 : n.getEntitiesMinusTop()) {
                                         //the propagation to the subclasses
                                         if(!cls1.isBottomEntity()) {
-                                            ACpropertyFillerBlist.add(cls1.toString()+";"+p.toString());
+                                            ACpropertyFillerBlist.add(cls1.toString()+";"+p);
                                         }
                                     }
-                                }
+                                });
                             }
                         }
                     }
                 });
-            }
+            });
             String writePath = System.getProperty("catalina.base") + "/temp/";
             if (System.getProperty("os.name").toLowerCase().contains("win")) {
                 writePath = "";
@@ -467,17 +469,23 @@ public class FCP {
 
             //19-12-19
             //all_created_class_expressions - work in progress
-            all_created_class_expressions = new HashSet<OWLClassExpression>();
+            all_created_class_expressions = new HashSet<>();
 
             //fist go for variants v2, v3, v4
             List<String> list2=new ArrayList<>();
             List<String> list3=new ArrayList<>();
             List<String> list4=new ArrayList<>();
-            for(OWLObjectProperty op : this.ontology.getObjectPropertiesInSignature(considerImport)) {
-                for(Node<OWLClass> n : reasoner.getObjectPropertyDomains(op, false).getNodes()) {
+            this.ontology.objectPropertiesInSignature(considerImport).forEach((OWLObjectProperty op) -> {
+                Iterator<Node<OWLClass>> it = reasoner.getObjectPropertyDomains(op, false).nodes().iterator();
+                while(it.hasNext()) {
+                    Node<OWLClass> n = it.next();
                     //it does not consider Nothing
-                    if(n.isBottomNode()) break;
+                    if (n.isBottomNode()) break;
+
                     for(OWLClass cls1 : n.getEntitiesMinusTop()) {
+                        if (selectedClasses.size() > 0 && !selectedClasses.contains(cls1.toString())) {
+                            continue;
+                        }
                         //v2
                         if(ACpropertyFillerBlist.contains(cls1.toString()+";"+op.toString())) {
                             System.out.println("blist applied:"+cls1.toString()+";"+op.toString());
@@ -492,22 +500,22 @@ public class FCP {
                         all_created_class_expressions.add(clsExpr1);
                         OWLClassExpression clsExpr3 = this.factory.getOWLObjectSomeValuesFrom(op, factory.getOWLThing());
                         OWLClassExpression clsExpr4 = factory.getOWLObjectIntersectionOf(cls1, clsExpr3);
-                        if (reasoner.isSatisfiable(clsExpr4)==false) {
-                            System.out.println(reasoner.isConsistent());
-                            System.out.println(clsExpr4);
-                            System.out.println("Found CE which is not satisfiable");
+                        if (!reasoner.isSatisfiable(clsExpr4)) {
+                            System.err.println(reasoner.isConsistent());
+                            System.err.println(clsExpr4);
+                            System.err.println("Found CE which is not satisfiable");
                             System.exit(1);
                         }
 
-                        System.out.println("");
+                        System.out.println();
 
                         //start v3
-                        HashSet<String> subclasses = new HashSet<String>();
-                        HashSet<String> individuals = new HashSet<String>();
+                        HashSet<String> subclasses = new HashSet<>();
+                        HashSet<String> individuals = new HashSet<>();
                         EntitySearcher.getRanges(op, this.ontology).forEach((OWLClassExpression exp) -> {
                             if(exp instanceof OWLClass) {
                                 OWLClass cls2 = (OWLClass) exp;
-                                for(Node<OWLClass> n2 : reasoner.getSubClasses(cls2, false).getNodes()) {
+                                reasoner.getSubClasses(cls2, false).nodes().forEach((Node<OWLClass> n2) -> {
                                     for(OWLClass cls3 : n2.getEntitiesMinusBottom()) {
                                         if(ACpropertyFillerBlist.contains(cls1.toString()+";"+op.toString()+";"+cls3.toString())) {
                                             System.out.println("blist applied:"+cls1.toString()+";"+op.toString()+";"+cls3.toString());
@@ -515,17 +523,15 @@ public class FCP {
                                         }
                                         subclasses.add(cls3.toString());
                                     }
-                                }
+                                });
                                 //start v4
-                                for(Node<OWLNamedIndividual> n2 : reasoner.getInstances(cls2, false).getNodes()) {
-                                    for(OWLNamedIndividual ind : n2.getEntities()) {
-                                        if(ACpropertyFillerBlist.contains(cls1.toString()+";"+op.toString()+";"+ind.toString())) {
-                                            System.out.println("blist applied:"+cls1.toString()+";"+op.toString()+";"+ind.toString());
-                                            continue; //pruning
-                                        }
-                                        individuals.add(ind.toString());
+                                reasoner.getInstances(cls2, false).nodes().forEach((Node<OWLNamedIndividual> n2) -> n2.entities().filter((OWLNamedIndividual ind) -> {
+                                    if(ACpropertyFillerBlist.contains(cls1.toString()+";"+op.toString()+";"+ind.toString())) {
+                                        System.out.println("blist applied:"+cls1.toString()+";"+op.toString()+";"+ind.toString());
+                                        return false; //pruning
                                     }
-                                }
+                                    return true;
+                                }).forEach((OWLNamedIndividual ind) -> individuals.add(ind.toString())));
                                 //end v4
                             }
                         });
@@ -537,16 +543,16 @@ public class FCP {
                                 list3.add("$v3 | exists | "+op+"."+x+" | rdfs:subClassOf | "+cls1);
                                 toFile.println("$v3 | exists | "+op+"."+x+" | rdfs:subClassOf | "+cls1);
                                 toFile.println("");
-                                System.out.println("");
+                                System.out.println();
                                 //19-12-19, start, corresponding class expression
                                 clsExpr1 = this.factory.getOWLObjectSomeValuesFrom(op, this.factory.getOWLClass(IRI.create(x.replaceAll("<", "").replaceAll(">", ""))));
                                 all_created_class_expressions.add(clsExpr1);
                                 clsExpr3 = this.factory.getOWLObjectSomeValuesFrom(op, this.factory.getOWLClass(IRI.create(x.replaceAll("<", "").replaceAll(">", ""))));
                                 clsExpr4 = factory.getOWLObjectIntersectionOf(cls1, clsExpr3);
-                                if (reasoner.isSatisfiable(clsExpr4)==false) {
-                                    System.out.println(reasoner.isConsistent());
-                                    System.out.println(clsExpr4);
-                                    System.out.println("Found CE which is not satisfiable");
+                                if (!reasoner.isSatisfiable(clsExpr4)) {
+                                    System.err.println(reasoner.isConsistent());
+                                    System.err.println(clsExpr4);
+                                    System.err.println("Found CE which is not satisfiable");
                                     System.exit(1);
                                 }
                             }
@@ -555,7 +561,7 @@ public class FCP {
                         if(!individuals.isEmpty())
                             for(String x : individuals) {
                                 System.out.println("$v4 | exists | "+op+".{"+x+"} | rdfs:subClassOf | "+cls1);
-                                System.out.println("");
+                                System.out.println();
 
                                 list4.add("$v4 | exists | "+op+".{"+x+"} | rdfs:subClassOf | "+cls1);
                                 toFile.println("$v4 | exists | "+op+".{"+x+"} | rdfs:subClassOf | "+cls1);
@@ -565,17 +571,17 @@ public class FCP {
                                 all_created_class_expressions.add(clsExpr1);
                                 clsExpr3 = this.factory.getOWLObjectSomeValuesFrom(op, (this.factory.getOWLObjectOneOf(this.factory.getOWLNamedIndividual(IRI.create(x.replaceAll("<", "").replaceAll(">", ""))))));
                                 clsExpr4 = factory.getOWLObjectIntersectionOf(cls1, clsExpr3);
-                                if (reasoner.isSatisfiable(clsExpr4)==false) {
-                                    System.out.println(reasoner.isConsistent());
-                                    System.out.println(clsExpr4);
-                                    System.out.println("Found CE which is not satisfiable");
+                                if (!reasoner.isSatisfiable(clsExpr4)) {
+                                    System.err.println(reasoner.isConsistent());
+                                    System.err.println(clsExpr4);
+                                    System.err.println("Found CE which is not satisfiable");
                                     System.exit(1);
                                 }
                             }
                         //end v3
                     }
                 }
-            }
+            });
             data.put("v2", list2);
             data.put("v3", list3);
             data.put("v4", list4);
@@ -583,48 +589,56 @@ public class FCP {
             //for dp compute v2
 
 
-            for(OWLDataProperty dp : this.ontology.getDataPropertiesInSignature(considerImport)) {
-                for(Node<OWLClass> n : reasoner.getDataPropertyDomains(dp, false).getNodes()) {
+            this.ontology.dataPropertiesInSignature(considerImport).forEach((OWLDataProperty dp) -> {
+                Iterator<Node<OWLClass>> it = reasoner.getDataPropertyDomains(dp, false).nodes().iterator();
+                while(it.hasNext()) {
+                    Node<OWLClass> n = it.next();
                     //if domain is Nothing not considering this
-                    if(n.isBottomNode()) break;
+                    if (n.isBottomNode()) break;
                     for(OWLClass cls1 : n.getEntitiesMinusTop()) {
+                        if (selectedClasses.size() > 0 && !selectedClasses.contains(cls1.toString())) {
+                            continue;
+                        }
                         if(ACpropertyFillerBlist.contains(cls1.toString()+";"+dp.toString())) {
                             System.out.println("blist applied:"+cls1.toString()+";"+dp.toString());
                             continue; //pruning
                         }
                         System.out.println("$v2 | (dp) exists | "+dp+".owl:Thing | rdfs:subClassOf | "+cls1);
                         list2.add("$v2 | (dp) exists | "+dp+".owl:Thing | rdfs:subClassOf | "+cls1);
-                        System.out.println("");
+                        System.out.println();
                         toFile.println("$v2 | (dp) exists | "+dp+".owl:Thing | rdfs:subClassOf | "+cls1);
                         toFile.println("");
                         //19-12-19, start, corresponding odpovidajici class expression for dp owl:Thing not possible
                         //end dp v2
                     }
                 }
-
-            }
+            });
             data.put("v2", list2);
             //end categorization options detection itself v2, v3, v4 but v1 is in the following iteration
 
             //3. compute v1
             List<String> list1=new ArrayList<>();
-            for(OWLClass cls : this.ontology.getClassesInSignature(considerImport)) {
-                if(cls.isTopEntity())
-                    continue;
+            this.ontology.classesInSignature(considerImport)
+                    .filter((OWLClass cls) -> {
+                        if (selectedClasses.size() == 0) {
+                            return true;
+                        } else {
+                            return selectedClasses.contains(cls.getIRI().toString());
+                        }
+                    })
+                    .filter((OWLClass cls) -> !cls.isTopEntity()).forEach((OWLClass cls) -> {
                 //compute and print v1
-                HashSet<String> subclasses = new HashSet<String>();
-                HashSet<OWLClass> subclasses1 = new HashSet<OWLClass>();
+                HashSet<String> subclasses = new HashSet<>();
+                HashSet<OWLClass> subclasses1 = new HashSet<>();
 
-                for(Node<OWLClass> n : reasoner.getSubClasses(cls, false).getNodes()) {
+                reasoner.getSubClasses(cls, false).nodes().forEach((Node<OWLClass> n) -> {
                     if(n.getEntitiesMinusBottom().size()>0) {
                         subclasses.add(n.getEntitiesMinusBottom().toString());
                         //19-12-19, because of finding CE already as equivalence for subclasses)
-                        for(OWLClass cls1 : n.getEntitiesMinusBottom()) {
-                            subclasses1.add(cls1);
-                        }
+                        subclasses1.addAll(n.getEntitiesMinusBottom());
                         //19-12-19, end
                     }
-                }
+                });
                 if(subclasses.size()>0) {
                     System.out.println("$v1 | "+cls+" | "+subclasses);
                     list1.add("$v1 | "+cls+" | "+subclasses);
@@ -636,15 +650,15 @@ public class FCP {
                     //toFile.println(subclasses1);
                     //the following work in progress
                     for(OWLClassExpression owlExpr1 : all_created_class_expressions) {
-                        if (!reasoner.getEquivalentClasses(owlExpr1).getEntities().isEmpty()) {
-                            System.out.println(reasoner.getEquivalentClasses(owlExpr1).getEntities());
+                        if (!reasoner.getEquivalentClasses(owlExpr1).entities().findAny().isPresent()) {
+                            reasoner.getEquivalentClasses(owlExpr1).entities().forEach(System.out::println);
                         }
                     }
                     //19-12-19, end
                 }
 
                 toFile.println();
-            }
+            });
 
             data.put("v1", list1);
             toFile.close();
@@ -653,6 +667,7 @@ public class FCP {
         }
         catch(Exception e) {
             e.printStackTrace();
+            throw new Exception(e.getMessage());
         }
         return data;
     }
