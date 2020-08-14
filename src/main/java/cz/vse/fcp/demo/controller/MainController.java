@@ -20,7 +20,7 @@ import java.util.concurrent.TimeUnit;
 @CrossOrigin
 @RestController
 public class MainController {
-    CacheControl cacheControl = CacheControl.maxAge(1, TimeUnit.SECONDS).noTransform().mustRevalidate();
+    CacheControl cacheControl = CacheControl.maxAge(300, TimeUnit.SECONDS).noTransform().mustRevalidate();
 
     @GetMapping("/")
     @ResponseBody
