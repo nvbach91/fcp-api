@@ -483,7 +483,7 @@ public class FCP {
                     if (n.isBottomNode()) break;
 
                     for(OWLClass cls1 : n.getEntitiesMinusTop()) {
-                        if (selectedClasses.size() > 0 && !selectedClasses.contains(cls1.toString())) {
+                        if (selectedClasses.size() > 0 && !selectedClasses.contains(cls1.getIRI().toString())) {
                             continue;
                         }
                         //v2
@@ -596,7 +596,7 @@ public class FCP {
                     //if domain is Nothing not considering this
                     if (n.isBottomNode()) break;
                     for(OWLClass cls1 : n.getEntitiesMinusTop()) {
-                        if (selectedClasses.size() > 0 && !selectedClasses.contains(cls1.toString())) {
+                        if (selectedClasses.size() > 0 && !selectedClasses.contains(cls1.getIRI().toString())) {
                             continue;
                         }
                         if(ACpropertyFillerBlist.contains(cls1.toString()+";"+dp.toString())) {
@@ -618,15 +618,13 @@ public class FCP {
 
             //3. compute v1
             List<String> list1=new ArrayList<>();
-            this.ontology.classesInSignature(considerImport)
-                    .filter((OWLClass cls) -> {
-                        if (selectedClasses.size() == 0) {
-                            return true;
-                        } else {
-                            return selectedClasses.contains(cls.getIRI().toString());
-                        }
-                    })
-                    .filter((OWLClass cls) -> !cls.isTopEntity()).forEach((OWLClass cls) -> {
+            this.ontology.classesInSignature(considerImport).filter((OWLClass cls) -> {
+                if (selectedClasses.size() == 0) {
+                    return true;
+                } else {
+                    return selectedClasses.contains(cls.getIRI().toString());
+                }
+            }).filter((OWLClass cls) -> !cls.isTopEntity()).forEach((OWLClass cls) -> {
                 //compute and print v1
                 HashSet<String> subclasses = new HashSet<>();
                 HashSet<OWLClass> subclasses1 = new HashSet<>();
