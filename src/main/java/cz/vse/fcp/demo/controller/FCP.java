@@ -73,7 +73,7 @@ public class FCP {
             //there is always the combination (anchor class, property) added to the black list for pruning
             HashSet<String> ACpropertyFillerBlist = new HashSet<>();
 
-            //19-12-19, creation class expressions corresponding to cases v2,v3,v4 (p1,p2,p3) for checking whether they are not already counted in v1 (p1) - kind of experiment implemention
+            //19-12-19, creation class expressions corresponding to cases t2,t3,t4 (p1,p2,p3) for checking whether they are not already counted in t1 (p1) - kind of experiment implemention
             HashSet<OWLClassExpression> all_created_class_expressions;
 
             //use the reasoner
@@ -463,7 +463,7 @@ public class FCP {
             toFileBL.println();
             toFileBL.close();
 
-            //2. categorization options detection itself - variants v1, v2, v3, v4 (v5 is skipped for now)
+            //2. categorization options detection itself - variants t1, t2, t3, t4 (t5 is skipped for now)
             PrintWriter toFile = new PrintWriter(new FileWriter(writePath + "a.txt", true));
             toFile.println(onto);
 
@@ -471,7 +471,7 @@ public class FCP {
             //all_created_class_expressions - work in progress
             all_created_class_expressions = new HashSet<>();
 
-            //fist go for variants v2, v3, v4
+            //fist go for variants t2, t3, t4
             List<String> list2 = new ArrayList<>();
             List<String> list3 = new ArrayList<>();
             List<String> list4 = new ArrayList<>();
@@ -486,14 +486,14 @@ public class FCP {
                         if (selectedClasses.size() > 0 && !selectedClasses.contains(cls1.getIRI().toString())) {
                             continue;
                         }
-                        //v2
+                        //t2
                         if (ACpropertyFillerBlist.contains(cls1.toString() + ";" + op.toString())) {
                             System.out.println("blist applied:" + cls1.toString() + ";" + op.toString());
                             continue; //pruning
                         }
-                        System.out.println("$v2 | exists | " + op + ".owl:Thing | rdfs:subClassOf | " + cls1);
-                        list2.add("$v2 | exists | " + op + ".owl:Thing | rdfs:subClassOf | " + cls1);
-                        toFile.println("$v2 | exists | " + op + ".owl:Thing | rdfs:subClassOf | " + cls1);
+                        System.out.println("$t2 | exists | " + op + ".owl:Thing | rdfs:subClassOf | " + cls1);
+                        list2.add("$t2 | exists | " + op + ".owl:Thing | rdfs:subClassOf | " + cls1);
+                        toFile.println("$t2 | exists | " + op + ".owl:Thing | rdfs:subClassOf | " + cls1);
 
                         //19-12-19, creation corresponding class expression
                         OWLClassExpression clsExpr1 = this.factory.getOWLObjectSomeValuesFrom(op, factory.getOWLThing());
@@ -503,13 +503,14 @@ public class FCP {
                         if (!reasoner.isSatisfiable(clsExpr4)) {
                             System.err.println(reasoner.isConsistent());
                             System.err.println(clsExpr4);
-                            System.err.println("Found CE which is not satisfiable");
-                            System.exit(1);
+                            System.err.println("Found CE which is not satisfiable ($t2)");
+//                            System.exit(1);
+//                            continue;
                         }
 
                         System.out.println();
 
-                        //start v3
+                        //start t3
                         HashSet<String> subclasses = new HashSet<>();
                         HashSet<String> individuals = new HashSet<>();
                         EntitySearcher.getRanges(op, this.ontology).forEach((OWLClassExpression exp) -> {
@@ -524,7 +525,7 @@ public class FCP {
                                         subclasses.add(cls3.toString());
                                     }
                                 });
-                                //start v4
+                                //start t4
                                 reasoner.getInstances(cls2, false).nodes().forEach((Node<OWLNamedIndividual> n2) -> n2.entities().filter((OWLNamedIndividual ind) -> {
                                     if (ACpropertyFillerBlist.contains(cls1.toString() + ";" + op.toString() + ";" + ind.toString())) {
                                         System.out.println("blist applied:" + cls1.toString() + ";" + op.toString() + ";" + ind.toString());
@@ -532,16 +533,16 @@ public class FCP {
                                     }
                                     return true;
                                 }).forEach((OWLNamedIndividual ind) -> individuals.add(ind.toString())));
-                                //end v4
+                                //end t4
                             }
                         });
                         if (!subclasses.isEmpty()) {
-                            //System.out.println("$v3 "+subclasses+" classification option (via op "+op+") for anchor class:"+cls1);;
+                            //System.out.println("$t3 "+subclasses+" classification option (via op "+op+") for anchor class:"+cls1);;
                             for (String x : subclasses) {
-                                System.out.println("$v3 | exists | " + op + "." + x + " | rdfs:subClassOf | " + cls1);
+                                System.out.println("$t3 | exists | " + op + "." + x + " | rdfs:subClassOf | " + cls1);
 
-                                list3.add("$v3 | exists | " + op + "." + x + " | rdfs:subClassOf | " + cls1);
-                                toFile.println("$v3 | exists | " + op + "." + x + " | rdfs:subClassOf | " + cls1);
+                                list3.add("$t3 | exists | " + op + "." + x + " | rdfs:subClassOf | " + cls1);
+                                toFile.println("$t3 | exists | " + op + "." + x + " | rdfs:subClassOf | " + cls1);
                                 toFile.println("");
                                 System.out.println();
                                 //19-12-19, start, corresponding class expression
@@ -552,19 +553,20 @@ public class FCP {
                                 if (!reasoner.isSatisfiable(clsExpr4)) {
                                     System.err.println(reasoner.isConsistent());
                                     System.err.println(clsExpr4);
-                                    System.err.println("Found CE which is not satisfiable");
-                                    System.exit(1);
+                                    System.err.println("Found CE which is not satisfiable ($t3)");
+//                                    System.exit(1);
+//                                    continue;
                                 }
                             }
 
                         }
                         if (!individuals.isEmpty())
                             for (String x : individuals) {
-                                System.out.println("$v4 | exists | " + op + ".{" + x + "} | rdfs:subClassOf | " + cls1);
+                                System.out.println("$t4 | exists | " + op + ".{" + x + "} | rdfs:subClassOf | " + cls1);
                                 System.out.println();
 
-                                list4.add("$v4 | exists | " + op + ".{" + x + "} | rdfs:subClassOf | " + cls1);
-                                toFile.println("$v4 | exists | " + op + ".{" + x + "} | rdfs:subClassOf | " + cls1);
+                                list4.add("$t4 | exists | " + op + ".{" + x + "} | rdfs:subClassOf | " + cls1);
+                                toFile.println("$t4 | exists | " + op + ".{" + x + "} | rdfs:subClassOf | " + cls1);
                                 toFile.println("");
                                 //19-12-19, start, corresponding class expression
                                 clsExpr1 = this.factory.getOWLObjectSomeValuesFrom(op, (this.factory.getOWLObjectOneOf(this.factory.getOWLNamedIndividual(IRI.create(x.replaceAll("<", "").replaceAll(">", ""))))));
@@ -574,19 +576,20 @@ public class FCP {
                                 if (!reasoner.isSatisfiable(clsExpr4)) {
                                     System.err.println(reasoner.isConsistent());
                                     System.err.println(clsExpr4);
-                                    System.err.println("Found CE which is not satisfiable");
-                                    System.exit(1);
+                                    System.err.println("Found CE which is not satisfiable ($t4)");
+//                                    System.exit(1);
+//                                    continue;
                                 }
                             }
-                        //end v3
+                        //end t3
                     }
                 }
             });
-            data.put("v2", list2);
-            data.put("v3", list3);
-            data.put("v4", list4);
+            data.put("t2", list2);
+            data.put("t3", list3);
+            data.put("t4", list4);
 
-            //for dp compute v2
+            //for dp compute t2
 
 
             this.ontology.dataPropertiesInSignature(considerImport).forEach((OWLDataProperty dp) -> {
@@ -603,20 +606,20 @@ public class FCP {
                             System.out.println("blist applied:" + cls1.toString() + ";" + dp.toString());
                             continue; //pruning
                         }
-                        System.out.println("$v2 | (dp) exists | " + dp + ".owl:Thing | rdfs:subClassOf | " + cls1);
-                        list2.add("$v2 | (dp) exists | " + dp + ".owl:Thing | rdfs:subClassOf | " + cls1);
+                        System.out.println("$t2 | (dp) exists | " + dp + ".owl:Thing | rdfs:subClassOf | " + cls1);
+                        list2.add("$t2 | (dp) exists | " + dp + ".owl:Thing | rdfs:subClassOf | " + cls1);
                         System.out.println();
-                        toFile.println("$v2 | (dp) exists | " + dp + ".owl:Thing | rdfs:subClassOf | " + cls1);
+                        toFile.println("$t2 | (dp) exists | " + dp + ".owl:Thing | rdfs:subClassOf | " + cls1);
                         toFile.println("");
                         //19-12-19, start, corresponding odpovidajici class expression for dp owl:Thing not possible
-                        //end dp v2
+                        //end dp t2
                     }
                 }
             });
-            data.put("v2", list2);
-            //end categorization options detection itself v2, v3, v4 but v1 is in the following iteration
+            data.put("t2", list2);
+            //end categorization options detection itself t2, t3, t4 but t1 is in the following iteration
 
-            //3. compute v1
+            //3. compute t1
             List<String> list1 = new ArrayList<>();
             this.ontology.classesInSignature(considerImport).filter((OWLClass cls) -> {
                 if (selectedClasses.size() == 0) {
@@ -625,7 +628,7 @@ public class FCP {
                     return selectedClasses.contains(cls.getIRI().toString());
                 }
             }).filter((OWLClass cls) -> !cls.isTopEntity()).forEach((OWLClass cls) -> {
-                //compute and print v1
+                //compute and print t1
                 HashSet<String> subclasses = new HashSet<>();
                 HashSet<OWLClass> subclasses1 = new HashSet<>();
 
@@ -638,10 +641,10 @@ public class FCP {
                     }
                 });
                 if (subclasses.size() > 0) {
-                    System.out.println("$v1 | " + cls + " | " + subclasses);
-                    list1.add("$v1 | " + cls + " | " + subclasses);
-                    toFile.println("$v1 | " + cls + " | " + subclasses);
-                    //19-12-19, checking whether named subclass  is not the same as cases from v2, v3, v4
+                    System.out.println("$t1 | " + cls + " | " + subclasses);
+                    list1.add("$t1 | " + cls + " | " + subclasses);
+                    toFile.println("$t1 | " + cls + " | " + subclasses);
+                    //19-12-19, checking whether named subclass  is not the same as cases from t2, t3, t4
                     //if so then it is output but not counted
                     //this part is in progress
                     System.out.println(subclasses1);
@@ -658,7 +661,7 @@ public class FCP {
                 toFile.println();
             });
 
-            data.put("v1", list1);
+            data.put("t1", list1);
             toFile.close();
 
             System.out.println("done");
