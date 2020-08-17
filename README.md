@@ -2,8 +2,10 @@
 
 ## Usage:
 ```
-GET http://localhost:8080/fcp?iris=https://owl.vse.cz/ontologies/117810.owl,http://oaei.ontologymatching.org/2015/conference/data/edas.owl
+GET http://localhost:8080/fcp?iri=https://owl.vse.cz/ontologies/117810.owl&selectedClasses=http://cmt#Administrator,http://cmt#Author
 ```
+- The `iri` param is required and should be the IRI of the ontology, which should be dereferencable, otherwise use a direct download link of the ontology source code
+- The `selectedClasses` param is used to filter focus classes
 
 ## Output:
 ```js
