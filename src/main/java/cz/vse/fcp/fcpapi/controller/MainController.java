@@ -1,4 +1,4 @@
-package cz.vse.fcp.demo.controller;
+package cz.vse.fcp.fcpapi.controller;
 
 
 import org.springframework.http.CacheControl;

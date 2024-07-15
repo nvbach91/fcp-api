@@ -1,13 +1,13 @@
-package cz.vse.fcp.demo;
+package cz.vse.fcp.fcpapi;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
 @SpringBootTest
-class SpringApplicationTests {
+class FcpApiApplicationTests {
 
-	@Test
-	void contextLoads() {
-	}
+    @Test
+    void contextLoads() {
+    }
 
 }

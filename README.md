@@ -7,7 +7,7 @@ FCP API (back-end) is the API used to extract concepts and 4 types of subcategor
 
 This repository contains the code of the back-end part of this FCP project.
 
-## Link to demo application (front-end)
+## Link to web application (front-end)
 https://fcp.vse.cz/orecap
 
 ## Front-end (UI) project repository
@@ -44,6 +44,6 @@ GET http://localhost:8080/fcp
 
 ## Deployment:
 - Run `./gradlew bootWar`
-- Deploy the `.war` file to a Tomcat container
+- Deploy the `/build/libs/fcpapi.war` file to a Tomcat container
     - make sure Tomcat has permission to write file to CATALINA_BASE
 
